@@ -10,13 +10,13 @@
     <input @click="clearStatus()" type="text" v-model="status"><br>
 
     <!--submitボタンを押すと、firebaseへ上記の４項目が登録される。-->
-    <button @click="addList()">submit</button>
+    <button v-on:click="addList()">submit</button>
 
     <!--updateボタンは、テーブル表のeditボタンがクリックされると、表示される。-->
     <!--updateボタンを押すと、上記の４項目にテーブル表の中身がコピーされる。-->
     <!--コピーされた項目を修正することで、各テーブル項目のupdateができる。-->
     <!--詳しくはupdateList関数を参照する。-->
-    <button v-if="HideUpdateButton()" @click="updateList(id)">update</button>
+    <button v-if="HideUpdateButton()" v-on:click="updateList(id)">update</button>
     <br><br>
 
     <!--上記のclear＊＊関数と同様に、フォームをクリックすると入力フォームが空になる。-->
@@ -28,13 +28,13 @@
     <!--全件表示を押すと、絞り込みが解除されて全項目が再表示される。-->
     <!--また絞り込みの検索結果テーブルと。「検索結果」のタイトルが非表示になる。-->
     <button v-if="displayAllParams()" @click="displayAll()">全件表示</button>
-
+    <button @click="testSearch()">検索テスト</button>
     <!--絞り込み検索されると、「検索結果＊＊件中＊＊件表示」と表示される。-->
     <p v-if="displayAllParams()">検索結果：{{ lists.length }}件中 {{ empty_list.length }} 表示</p>
 
     <!--デフォルト状態で表示されているテーブル-->
     <!--firebaseに保管されているデータを全て表示している。-->
-    <table v-if="tableDisplayParams()">
+    <table>
       <tr>
         <th>ID</th>
         <th>カテゴリ</th>
@@ -54,26 +54,7 @@
         <td width="40"><button @click="editList(list)">edit</button></td>
       </tr>
     </table>
-    <table>
 
-      <!--絞り込み検索されると、「検索結果＊＊件中＊＊件表示」と表示される。-->
-      <h3 v-if="displayAllParams()">検索結果</h3>
-      <!--絞り込み検索されると、検索結果を格納したテーブルが表示される。-->
-      <tr v-if="displayAllParams()">
-        <th>ID</th>
-        <th>カテゴリ</th>
-        <th>タイトル</th>
-        <th>詳細</th>
-        <th>ステータス</th>
-      </tr>
-      <tr v-for="(list, index) in empty_list" :key="index">
-        <td width="30">{{ index + 1 }}</td>
-        <td width="80">{{ empty_list[index][0] }}</td>
-        <td width="80">{{ empty_list[index][1] }}</td>
-        <td width="160">{{ empty_list[index][2] }}</td>
-        <td width="80">{{ empty_list[index][3] }}</td>
-      </tr>
-    </table>
   </div>
 </template>
 
@@ -93,8 +74,11 @@ export default {
       table_display_params: 1,
       display_all_params: 1,
       lists: [],
-      searchWord: '検索',
+      lists2: [],
+      newArray: [],
+      searchWord: 11,
       empty_list: [],
+      search_params: 11,
       n: 0
     }
   },
@@ -120,13 +104,23 @@ export default {
         detail: this.detail,
         status: this.status
       })
+      db.collection('lists').get()
       .then(snapshot => {
+        //let i = 0
+        this.lists = []
         snapshot.forEach(doc => {
+
           let list = doc.data()
+
           list.id = doc.id
+
           this.lists.push(list)
         })
+        //db.collection('lists')で全てのデータをとれている。
+        //あとは全て表示させるコードを書くだけ
       }),
+
+      console.log(this.lists)
 
       //登録後は、入力フォームをからにしている。
       this.category = null,
@@ -171,8 +165,20 @@ export default {
         title: this.title,
         detail: this.detail,
         status: this.status
-      }),
+      })
+      db.collection('lists').get()
       //入力フォームが更新された後は、入力フォームが空になる。
+      .then(snapshot => {
+        console.log(snapshot)
+        this.lists = []
+        snapshot.forEach(doc => {
+          let list = doc.data()
+          list.id = doc.id
+          console.log(list)
+          this.lists.push(list)
+        })
+        console.log(this.lists)
+      }),
       this.category = null,
       this.title = null,
       this.detail = null,
@@ -196,6 +202,27 @@ export default {
     clearSearch(){
       this.searchWord = null
     },
+    //「検索テスト」がクリックされたら、listsでループを回すのではなく、newArrayでループを回せばいい。
+    testSearch(){
+      db.collection('lists').get()
+      .then(() => {
+        if (this.lists[0].category == 22) {
+          const num = this.searchWord
+          this.newArray = this.lists.filter(function(list) {
+
+            return list.category == num
+            || list.title == num
+            || list.detail == num
+            || list.status == num
+          })
+        } else {
+          alert("fail")
+        }
+        console.log(this.newArray)
+      })
+    },
+
+
 
     //テーブル表の全項目を検索している。
     //カテゴリ、タイトル、詳細、ステータスの項目をループさせている。
@@ -238,7 +265,7 @@ export default {
       }
     }
   },
-  created(){
+  mounted(){
 
     //firebaseからテーブル情報を取得して、こちらのファイルで定義した
     //lists = []という空の配列へ情報を書き込みしている。
@@ -255,6 +282,8 @@ export default {
 </script>
 
 <style scoped>
-
+h3 {
+  width: 200px
+}
 
 </style>
